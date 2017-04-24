@@ -52,13 +52,10 @@ def delete(name):
     logging.info("Deleting snippet {!r}".format(name))
     cursor = connection.cursor()
     command = "delete from snippets where keyword = (%s)"
-    row = cursor.fetchone()
     cursor.execute(command, (name,))
+    connection.commit()
     logging.debug("Snippet deleted successfully.")
-    if not row:
-        return None
-    else:
-        return row[0]
+    return name
     
 def patch(name, snippet):
     """
@@ -66,16 +63,13 @@ def patch(name, snippet):
     
     Returns the name and the snippet
     """
-    logging.info("updating snippet {!r} from {!r} to {!r}".format(name, snippet.snippet, snippet))
+    logging.info("updating snippet {!r} to {!r}".format(name, snippet))
     cursor = connection.cursor()
     command = "update snippets set message = (%s) where keyword = (%s)"
     cursor.execute(command, (snippet, name))
-    row = cursor.fetchone()
+    connection.commit()
     logging.debug("Snippet updated successfully")
-    if not row:
-        return None
-    else:
-        return row[0]
+    return name, snippet
     
 def main():
     """Main function"""
@@ -95,6 +89,17 @@ def main():
     get_parser = subparsers.add_parser("get", help="Retrieve a snippet")
     get_parser.add_argument("name", help="content of the name")
     
+    #subparser for the delete command
+    logging.debug("Constructing delete subparser")
+    delete_parser = subparsers.add_parser("delete", help="Delete a snippet")
+    delete_parser.add_argument("name", help="content of the name")
+    
+    #Subparser for the patch command
+    logging.debug("Constructing patch subparser")
+    patch_parser = subparsers.add_parser("patch", help="Update a snippet")
+    patch_parser.add_argument("name", help="Name of the snippet")
+    patch_parser.add_argument("snippet", help="Snippet text")
+    
     arguments = parser.parse_args()
     #convert parsed arguments from Namespace to a dictionary
     arguments = vars(arguments)
@@ -106,6 +111,12 @@ def main():
     elif command == "get":
         snippet = get(**arguments)
         print("Retrieved snippet: {!r}".format(snippet))
+    elif command == "patch":
+        name, snippet = patch(**arguments)
+        print("Updated snippet {!r} to {!r}".format(name, snippet))
+    elif command == "delete":
+        name = delete(**arguments)
+        print("Deleted snippet {!r}".format(name))
     
 if __name__ == "__main__":
     main()
