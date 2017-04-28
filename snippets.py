@@ -39,7 +39,7 @@ def catalog():
     else:
         return row
 
-def put(name, snippet, hidden):
+def put(name, snippet, hide):
     """
     Store a snippet with an associated name.
     
@@ -49,13 +49,13 @@ def put(name, snippet, hidden):
     with connection, connection.cursor() as cursor:
         try:
             command = "insert into snippets values (%s, %s, %s)"
-            cursor.execute(command, (name, snippet))
+            cursor.execute(command, (name, snippet, hide))
         except psycopg2.IntegrityError as e:
             connection.rollback()
-            command = "update snippets set message=%s where keyword=%s"
-            cursor.execute(command, (snippet, name))
+            command = "update snippets set message=%s, hidden=%s where keyword=%s"
+            cursor.execute(command, (snippet, hide, name))
     logging.debug("Snippet stored successfully.")
-    return name, snippet, hidden
+    return name, snippet, hide
     
 def get(name):
     """Retrieve the snippet with a given name.
@@ -131,7 +131,7 @@ def main():
     put_parser = subparsers.add_parser("put", help="Store a snippet")
     put_parser.add_argument("name", help="Name of the snippet")
     put_parser.add_argument("snippet", help="Snippet text")
- ###   put_parser.add_argument("-h", type=bool, help="Hides the snippet from catalog and search", action="store_true")
+    put_parser.add_argument("--hide", '-w', help="Hides the snippet from catalog and search", action="store_true")
 
     #subparser for the get command
     logging.debug("Constructing get subparser")
@@ -155,11 +155,7 @@ def main():
     command = arguments.pop("command")
     
     if command == "put":
-        name, snippet, hidden = put(**arguments)
-    ###    if arguments.h == 1:
-    ###        put.hidden = 't'
-        else:
-            put.hidden = 'f'
+        name, snippet, _ = put(**arguments)
         print("Stored {!r} as {!r}".format(snippet, name))
     elif command == "get":
         snippet = get(**arguments)
